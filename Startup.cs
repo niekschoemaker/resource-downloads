@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +30,18 @@ namespace ResourceDownloads
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers().AddNewtonsoftJson();
+
+            // configure strongly typed settings objects
+            var appSettingsSection = Configuration.GetSection("AppSettings");
+            services.Configure<AppSettings>(appSettingsSection);
+
+            // configure jwt authentication
+            var appSettings = appSettingsSection.Get<AppSettings>();
+
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.KnownNetworks.Add(new IPNetwork(System.Net.IPAddress.Parse("::ffff:" + appSettings.ProxyIp), 104));
+            });
 
             services.AddDbContextPool<ResourcesContext>(
                 dbContextOptions => dbContextOptions
