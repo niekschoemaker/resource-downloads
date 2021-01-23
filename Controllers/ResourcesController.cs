@@ -53,10 +53,5 @@ namespace ResourceDownloads.Controllers
             Stream stream = System.IO.File.OpenRead(downloadInfo.Resource.Path);
             return File(stream, "application/octet-stream", downloadInfo.Resource.FileName ?? Path.GetFileName(downloadInfo.Resource.Path));
         }
-
-        private bool ResourceExists(int id)
-        {
-            return _context.Resources.Any(e => e.Id == id);
-        }
     }
 }

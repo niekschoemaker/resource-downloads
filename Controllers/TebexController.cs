@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,59 +22,6 @@ namespace ResourceDownloads.Controllers
             _context = context;
         }
 
-        // GET: api/Tebex
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<DownloadKey>>> GetDownloadKeys()
-        {
-            return await _context.DownloadKeys.ToListAsync();
-        }
-
-        // GET: api/Tebex/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<DownloadKey>> GetDownloadKey(int id)
-        {
-            var downloadKey = await _context.DownloadKeys.FindAsync(id);
-
-            if (downloadKey == null)
-            {
-                return NotFound();
-            }
-
-            return downloadKey;
-        }
-
-        // PUT: api/Tebex/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutDownloadKey(int id, DownloadKey downloadKey)
-        {
-            if (id != downloadKey.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(downloadKey).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!DownloadKeyExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
         private static Random random = new Random();
         public static string RandomString(int length)
         {
@@ -90,6 +39,24 @@ namespace ResourceDownloads.Controllers
             //_context.DownloadKeys.Add(downloadKey);
             //await _context.SaveChangesAsync();
 
+            if (Startup.AppSettings.TebexSecret != null)
+            {
+                if (!Request.Headers.ContainsKey("X-BC-Sig"))
+                {
+                    return NotFound();
+                }
+                using (var sha256 = SHA256.Create())
+                {
+                    var authorizationHeaders = Request.Headers["X-BC-Sig"].ToString().ToUpper();
+
+                    var hash = BitConverter.ToString(sha256.ComputeHash(Encoding.UTF8.GetBytes(Startup.AppSettings.TebexSecret + tebexPayment.Payment.TxnId + tebexPayment.Payment.Status + tebexPayment.Customer.Email))).Replace("-", "");
+                    if (hash != authorizationHeaders)
+                    {
+                        return NotFound();
+                    }
+                }
+            }
+            
             if (tebexPayment.Packages == null)
             {
                 return Ok();
@@ -118,27 +85,6 @@ namespace ResourceDownloads.Controllers
 
             //return CreatedAtAction("GetDownloadKey", new { id = downloadKey.Id }, downloadKey);
             return Ok();
-        }
-
-        // DELETE: api/Tebex/5
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<DownloadKey>> DeleteDownloadKey(int id)
-        {
-            var downloadKey = await _context.DownloadKeys.FindAsync(id);
-            if (downloadKey == null)
-            {
-                return NotFound();
-            }
-
-            _context.DownloadKeys.Remove(downloadKey);
-            await _context.SaveChangesAsync();
-
-            return downloadKey;
-        }
-
-        private bool DownloadKeyExists(int id)
-        {
-            return _context.DownloadKeys.Any(e => e.Id == id);
         }
     }
 }

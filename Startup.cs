@@ -19,6 +19,7 @@ namespace ResourceDownloads
 {
     public class Startup
     {
+        public static AppSettings AppSettings { get; set; }
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -37,6 +38,7 @@ namespace ResourceDownloads
 
             // configure jwt authentication
             var appSettings = appSettingsSection.Get<AppSettings>();
+            AppSettings = appSettings;
 
             services.Configure<ForwardedHeadersOptions>(options =>
             {
@@ -70,8 +72,6 @@ namespace ResourceDownloads
             }
 
             app.UseRouting();
-
-            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
