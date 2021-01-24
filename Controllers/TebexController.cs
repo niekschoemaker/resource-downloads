@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using ResourceDownloads.Models;
 
 namespace ResourceDownloads.Controllers
@@ -16,9 +18,11 @@ namespace ResourceDownloads.Controllers
     public class TebexController : ControllerBase
     {
         private readonly ResourcesContext _context;
+        private readonly ILogger _logger;
 
-        public TebexController(ResourcesContext context)
+        public TebexController(ResourcesContext context, ILogger<TebexController> logger)
         {
+            _logger = logger;
             _context = context;
         }
 
@@ -28,6 +32,14 @@ namespace ResourceDownloads.Controllers
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz";
             return new string(Enumerable.Repeat(chars, length)
               .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTebexPayment(TebexPayment tebexPayment)
+        {
+            _logger.LogError(JsonConvert.SerializeObject(tebexPayment));
+
+            return Ok();
         }
 
         // POST: api/Tebex
@@ -81,8 +93,8 @@ namespace ResourceDownloads.Controllers
             }
 
             await _context.SaveChangesAsync();
-            
 
+            _logger.LogError(JsonConvert.SerializeObject(tebexPayment));
             //return CreatedAtAction("GetDownloadKey", new { id = downloadKey.Id }, downloadKey);
             return Ok();
         }
